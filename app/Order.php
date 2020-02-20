@@ -12,4 +12,16 @@ class Order extends Model
     {
         return $this->hasMany(Order_detail::class);
     }
+
+    protected $dates = ['created_at'];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function user()
+    {
+        return this->belongsTo(User::class);
+    }
 }
