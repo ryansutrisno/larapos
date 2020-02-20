@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
-use App\User;
 use Spatie\Permission\Models\Permission;
+use App\User;
 use DB;
 
 class UserController extends Controller
@@ -47,7 +47,7 @@ class UserController extends Controller
             'role' => 'required|string|exists:roles,name'
         ]);
 
-        $users = User::firsOrCreate([
+        $user = User::firsOrCreate([
             'email' => $request->email
         ], [
             'name' => $request->name,
@@ -55,8 +55,8 @@ class UserController extends Controller
             'status' => true
         ]);
 
-        $users->assignRoles($request->role);
-        return redirect(route('users.index'))->with(['success' => 'User: <strong>' . $users->name . '</strong> Ditambahkan!']);
+        $user->assignRoles($request->role);
+        return redirect(route('users.index'))->with(['success' => 'User: <strong>' . $user->name . '</strong> Ditambahkan!']);
     }
 
     /**
@@ -78,8 +78,8 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $users = User::findOrFail($id);
-        return view('users.edit', compact('users'));
+        $user = User::findOrFail($id);
+        return view('users.edit', compact('user'));
     }
 
     /**
@@ -97,13 +97,13 @@ class UserController extends Controller
             'password' => 'nullable|min:6'
         ]);
 
-        $users = User::findOrFail($id);
-        $password = !empty($request->password) ? bcrypt($request->password):$users->password;
-        $users->update([
+        $user = User::findOrFail($id);
+        $password = !empty($request->password) ? bcrypt($request->password):$user->password;
+        $user->update([
             'name' => $request->name,
             'password' => $password
         ]);
-        return redirect(route('users.index'))->with(['success' => 'User: <strong>' . $users->name . '</strong> Diperbaharui!']);
+        return redirect(route('users.index'))->with(['success' => 'User: <strong>' . $user->name . '</strong> Diperbaharui!']);
     }
 
     /**
@@ -114,15 +114,14 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        $users = User::findOrFail($id);
-        $users->delete();
-        return redirect()->back()->with(['success' => 'User: <strong>' . $users->name . '</strong> Dihapus!']);
+        $user = User::findOrFail($id);
+        $user->delete();
+        return redirect()->back()->with(['success' => 'User: <strong>' . $user->name . '</strong> Dihapus!']);
     }
 
     public function rolePermission(Request  $request)
     {
         $role = $request->get('role');
-
         $permissions = null;
         $hasPermission = null;
 
@@ -130,13 +129,13 @@ class UserController extends Controller
 
         if (!empty($role)) {
             $getRole = Role::findByName($role);
-
-            $hasPermission = DB::table('role_permissions')->select('permissions.name')
+            $hasPermission = DB::table('role_has_permissions')
+                        ->select('permissions.name')
                         ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
                         ->where('role_id', $getRole->id)->get()->pluck('name')->all();
             $permissions = Permission::all()->pluck('name');
         }
-        return view('users.role_permissions', compact('roles', 'permissions', 'hasPermission'));
+        return view('users.role_permission', compact('roles', 'permissions', 'hasPermission'));
     }
 
     public function addPermission(Request $request)
@@ -145,7 +144,7 @@ class UserController extends Controller
             'name' => 'required|string|unique:permissions'
         ]);
 
-        $permissions = Permission::firstOrCreate([
+        $permission = Permission::firstOrCreate([
             'name' => $request->name
         ]);
         return redirect()->back();
@@ -161,9 +160,9 @@ class UserController extends Controller
 
     public function roles(Request $request, $id)
     {
-        $users = User::findOrFail($id);
+        $user = User::findOrFail($id);
         $roles = Role::all()->pluck('name');
-        return view('users.roles', compact('users', 'roles'));
+        return view('users.roles', compact('user', 'roles'));
     }
 
     public function setRole(Request $request, $id)
@@ -172,9 +171,8 @@ class UserController extends Controller
             'role' => 'required'
         ]);
 
-        $users = User::findOrFail($id);
-
-        $users->syncRoles($request->role);
+        $user = User::findOrFail($id);
+        $user->syncRoles($request->role);
         return redirect()->back()->with(['success' => 'Role Sudah di Set']);
     }
 }
