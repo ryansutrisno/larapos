@@ -40,7 +40,7 @@ class RoleController extends Controller
             'name' => 'required|string|max:50'
         ]);
 
-        $role = Role::firsOrCreate(['name' => $request->]);
+        $role = Role::firstOrCreate(['name' => $request->name]);
         return redirect()->back()->with(['success' => 'Role: <strong>' . $role->name . '</strong> Ditambahkan']);
     }
 

@@ -42,14 +42,14 @@ class CategoryController extends Controller
          ]);
 
          try {
-             $categories = Category::firsOrCreate([
+             $categories = Category::firstOrCreate([
                  'name' => $request->name
              ], [
                  'description' => $request->description
                  ]);
-                 return redirect()->back()->with(['success' => 'Kategori: ' . $categories->name . 'Ditambahkan']);
+                 return redirect()->back()->with(['success' => 'Kategori: ' . $categories->name . ' Ditambahkan']);
          } catch (\Exception $e) {
-             return redirect()->back()->with(['error' => $e->getMessage]);
+             return redirect()->back()->with(['error' => $e->getMessage()]);
          }
     }
 
@@ -98,7 +98,7 @@ class CategoryController extends Controller
             ]);
             return redirect(route('kategori.index'))->with(['success' => 'Kategori: ' . $categories->name . ' Ditambahkan']);
         } catch (\Exception $e) {
-            return redirecet()->back()->with(['error' => $e->getMessage()]);
+            return redirect()->back()->with(['error' => $e->getMessage()]);
         }
     }
 
@@ -112,6 +112,6 @@ class CategoryController extends Controller
     {
         $categories = Category::findOrFail($id);
         $categories->delete();
-        return redirect()->back()->with(['success' => 'Kategori ' . $categories->name . 'Telah dihapus']);
+        return redirect()->back()->with(['success' => 'Kategori ' . $categories->name . ' Telah dihapus']);
     }
 }

@@ -47,7 +47,7 @@ class UserController extends Controller
             'role' => 'required|string|exists:roles,name'
         ]);
 
-        $user = User::firsOrCreate([
+        $user = User::firstOrCreate([
             'email' => $request->email
         ], [
             'name' => $request->name,
@@ -55,27 +55,10 @@ class UserController extends Controller
             'status' => true
         ]);
 
-        $user->assignRoles($request->role);
+        $user->assignRole($request->role);
         return redirect(route('users.index'))->with(['success' => 'User: <strong>' . $user->name . '</strong> Ditambahkan!']);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
         $user = User::findOrFail($id);
@@ -125,7 +108,7 @@ class UserController extends Controller
         $permissions = null;
         $hasPermission = null;
 
-        $role = Role::all()->pluck('name');
+        $roles = Role::all()->pluck('name');
 
         if (!empty($role)) {
             $getRole = Role::findByName($role);

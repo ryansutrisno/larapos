@@ -63,7 +63,7 @@ class ProductController extends Controller
                 'stock' => $request->stock,
                 'price' => $request->price,
                 'category_id' => $request->category_id,
-                'photo' => $request->photo
+                'photo' => $photo
             ]);
             return redirect(route('produk.index'))->with(['success' => '<strong>' . $product->name . '</strong> Ditambahkan']);
         } catch (\Exception $e) {
@@ -73,7 +73,7 @@ class ProductController extends Controller
 
     private function saveFile($name, $photo)
     {
-        $images = str_slug($name) . time() . '.' . $photo->getClientOriginaExtension();
+        $images = str_slug($name) . time() . '.' . $photo->getClientOriginalExtension();
 
         $path = public_path('uploads/product');
 
@@ -104,9 +104,9 @@ class ProductController extends Controller
      */
     public function edit($id)
     {
-        $products = Product::findOrFail($id);
+        $product = Product::findOrFail($id);
         $categories = Category::orderBy('name', 'ASC')->get();
-        return view('products.edit', compact('products', 'categories'));
+        return view('products.edit', compact('product', 'categories'));
     }
 
     /**

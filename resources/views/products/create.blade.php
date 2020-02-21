@@ -74,7 +74,7 @@
                                 <div class="form-group">
                                     <label for="">Kategori</label>
                                     <select name="category_id" id="category_id"
-                                        required class="form-control {{ $errors->has('price') ? 'is-invalid':'' }}">
+                                        required class="form-control {{ $errors->has('category_id') ? 'is-invalid':'' }}">
                                         <option value="">Pilih</option>
                                         @foreach ($categories as $row)
                                             <option value="{{ $row->id }}">{{ ucfirst($row->name) }}</option>
