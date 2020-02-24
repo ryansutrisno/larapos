@@ -8,7 +8,7 @@ class Customer extends Model
 {
     protected $guarded = [];
 
-    public function getNameAttribute()
+    public function getNameAttribute($value)
     {
         return ucfirst($value);
     }

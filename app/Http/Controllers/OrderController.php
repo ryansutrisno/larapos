@@ -8,7 +8,6 @@ use Carbon\Carbon;
 use App\Customer;
 use App\Product;
 use App\Order;
-use App\Order_detail;
 use App\User;
 use Cookie;
 use DB;
@@ -31,44 +30,42 @@ class OrderController extends Controller
     public function addToCart(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|exists:products,id',
+            'product_id' => 'required|exists:products,id',
             'qty' => 'required|integer'
         ]);
 
-        $products = Product::findOrFail($request->product_id);
+        $product = Product::findOrFail($request->product_id);
         $getCart = json_decode($request->cookie('cart'), true);
 
         if ($getCart) {
             if (array_key_exists($request->product_id, $getCart)) {
                 $getCart[$request->product_id]['qty'] += $request->qty;
-                return response()->json($getCart, 200);
+                return response()->json($getCart, 200)
+                    ->cookie('cart', json_encode($getCart), 120);
             }
         }
 
         $getCart[$request->product_id] = [
-            'code' => $products->code,
-            'name' => $products->name,
-            'price' => $products->price,
-            'qty' => $products->qty
-
+            'code' => $product->code,
+            'name' => $product->name,
+            'price' => $product->price,
+            'qty' => $request->qty
         ];
-        return response()->json($getCart, 200)->cookie('cart', json_encode($getCart), 120);
+        return response()->json($getCart, 200)
+            ->cookie('cart', json_encode($getCart), 120);
     }
 
     public function getCart()
     {
-        $cart = json_decode(request()->cookies('cart'), true);
+        $cart = json_decode(request()->cookie('cart'), true);
         return response()->json($cart, 200);
     }
 
     public function removeCart($id)
     {
-        $cart = json_decode(request()->cookies('cart'), true);
-
-        unset($cart['id']);
-
+        $cart = json_decode(request()->cookie('cart'), true);
+        unset($cart[$id]);
         return response()->json($cart, 200)->cookie('cart', json_encode($cart), 120);
-
     }
 
     public function checkout()
@@ -86,7 +83,7 @@ class OrderController extends Controller
         ]);
 
         $cart = json_decode($request->cookie('cart'), true);
-        $result = collect($cart)->map(function ($value) {
+        $result = collect($cart)->map(function($value) {
             return [
                 'code' => $value['code'],
                 'name' => $value['name'],
@@ -120,7 +117,6 @@ class OrderController extends Controller
                     'price' => $row['price']
                 ]);
             }
-
             DB::commit();
 
             return response()->json([
@@ -128,7 +124,7 @@ class OrderController extends Controller
                 'message' => $order->invoice,
             ], 200)->cookie(Cookie::forget('cart'));
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::rollback();
             return response()->json([
                 'status' => 'failed',
                 'message' => $e->getMessage()
@@ -139,25 +135,19 @@ class OrderController extends Controller
     public function generateInvoice()
     {
         $order = Order::orderBy('created_at', 'DESC');
-
         if ($order->count() > 0) {
             $order = $order->first();
             $explode = explode('-', $order->invoice);
-            return 'INV-' . $explode[1] + 1;
+            $count = $explode[1] + 1;
+            return 'INV-' . $count;
         }
         return 'INV-1';
     }
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index(Request $request)
     {
         $customers = Customer::orderBy('name', 'ASC')->get();
-
         $users = User::role('kasir')->orderBy('name', 'ASC')->get();
-
         $orders = Order::orderBy('created_at', 'DESC')->with('order_detail', 'customer');
 
         if (!empty($request->customer_id)) {
@@ -173,7 +163,6 @@ class OrderController extends Controller
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date'
             ]);
-
             $start_date = Carbon::parse($request->start_date)->format('Y-m-d') . ' 00:00:01';
             $end_date = Carbon::parse($request->end_date)->format('Y-m-d') . ' 23:59:59';
 
@@ -192,10 +181,9 @@ class OrderController extends Controller
         ]);
     }
 
-    public function countCustomer($orders)
+    private function countCustomer($orders)
     {
         $customer = [];
-
         if ($orders->count() > 0) {
             foreach ($orders as $row) {
                 $customer[] = $row->customer->email;
@@ -204,10 +192,9 @@ class OrderController extends Controller
         return count(array_unique($customer));
     }
 
-    public function countTotal($orders)
+    private function countTotal($orders)
     {
         $total = 0;
-
         if ($orders->count() > 0) {
             $sub_total = $orders->pluck('total')->all();
             $total = array_sum($sub_total);
@@ -215,12 +202,10 @@ class OrderController extends Controller
         return $total;
     }
 
-    public function countItem($order)
+    private function countItem($order)
     {
         $data = 0;
-
         if ($order->count() > 0) {
-
             foreach ($order as $row) {
                 $qty = $row->order_detail->pluck('qty')->all();
                 $val = array_sum($qty);
@@ -233,8 +218,7 @@ class OrderController extends Controller
     public function invoicePdf($invoice)
     {
         $order = Order::where('invoice', $invoice)
-                ->with('customer', 'order_detail', 'order_detail.product')->first();
-
+            ->with('customer', 'order_detail', 'order_detail.product')->first();
         $pdf = PDF::setOptions(['dpi' => 150, 'defaultFont' => 'sans-serif'])
             ->loadView('orders.report.invoice', compact('order'));
         return $pdf->stream();
@@ -242,8 +226,6 @@ class OrderController extends Controller
 
     public function invoiceExcel($invoice)
     {
-        return (new OrderInvoice($invoice))->download('invoice-' . $invoice . 'xlsx');
+        return (new OrderInvoice($invoice))->download('invoice-' . $invoice . '.xlsx');
     }
-
-
 }
